@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Gems | myBuildingBlocks]]></title>
+  <link href="http://antillas21.github.io/blog/categories/gems/atom.xml" rel="self"/>
+  <link href="http://antillas21.github.io/"/>
+  <updated>2014-02-13T17:12:06-08:00</updated>
+  <id>http://antillas21.github.io/</id>
+  <author>
+    <name><![CDATA[Jose Antonio Antillon]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[What I Learned Writing My First Ruby Gem]]></title>
+    <link href="http://antillas21.github.io/blog/2014/02/06/what-i-learned-writing-my-first-ruby-gem/"/>
+    <updated>2014-02-06T14:56:18-08:00</updated>
+    <id>http://antillas21.github.io/blog/2014/02/06/what-i-learned-writing-my-first-ruby-gem</id>
+    <content type="html"><![CDATA[<h2>Lorem ipsum dolor sit ammet&hellip;</h2>
+
+<p>So I ended with an API like this:</p>
+
+<p>```ruby
+client = Marvelite::API::Client.new(
+  :public_key => &lsquo;abcd&rsquo;,
+  :private_key => &lsquo;1234&rsquo;
+)</p>
+
+<h1>fetch a character:</h1>
+
+<p>client.character(900126)</p>
+
+<h1>but, who knows what id to use to fetch</h1>
+
+<h1>a character by name, so, this is more handy:</h1>
+
+<p>client.character(&lsquo;Spider-Man&rsquo;)</p>
+
+<h1>want a list of comics this character appears on?</h1>
+
+<h1>sure, no problem:</h1>
+
+<p>client.character_comics(&lsquo;Spider-Man&rsquo;)
+```</p>
+
+<p>```javascript
+var comicsApp = angular.module(&lsquo;comicsApp&rsquo;, []);</p>
+
+<p>// then you&rsquo;ll configure the app&hellip;
+// part of this config will create a service named Comics
+// then we get to the controller, that will use this service:
+comicsApp.controller(&lsquo;ComicsListController&rsquo;,
+  [&lsquo;$scope&rsquo;, &lsquo;Comics&rsquo;, function($scope, Comics) {</p>
+
+<pre><code>Comics.query().then(function(data) {
+  $scope.comics = data;
+});
+</code></pre>
+
+<p>  }]
+);
+```</p>
+]]></content>
+  </entry>
+  
+</feed>
