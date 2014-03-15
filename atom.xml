@@ -4,7 +4,7 @@
   <title><![CDATA[myBuildingBlocks]]></title>
   <link href="http://antillas21.github.io/atom.xml" rel="self"/>
   <link href="http://antillas21.github.io/"/>
-  <updated>2014-02-13T17:12:06-08:00</updated>
+  <updated>2014-03-15T12:40:48-07:00</updated>
   <id>http://antillas21.github.io/</id>
   <author>
     <name><![CDATA[Jose Antonio Antillon]]></name>
@@ -15,12 +15,71 @@
   
   <entry>
     <title type="html"><![CDATA[What I Learned Writing My First Ruby Gem]]></title>
-    <link href="http://antillas21.github.io/blog/2014/02/06/what-i-learned-writing-my-first-ruby-gem/"/>
-    <updated>2014-02-06T14:56:18-08:00</updated>
-    <id>http://antillas21.github.io/blog/2014/02/06/what-i-learned-writing-my-first-ruby-gem</id>
-    <content type="html"><![CDATA[<h2>Lorem ipsum dolor sit ammet&hellip;</h2>
+    <link href="http://antillas21.github.io/blog/2014/03/15/what-i-learned-writing-my-first-ruby-gem/"/>
+    <updated>2014-03-15T15:56:18-07:00</updated>
+    <id>http://antillas21.github.io/blog/2014/03/15/what-i-learned-writing-my-first-ruby-gem</id>
+    <content type="html"><![CDATA[<p>Weeks ago, Marvel Comics announced the release of its Comics API. I&rsquo;ve always been fond of comics, and in the spirit of learning how to consume APIs, I thought this would be a great pet-project to work on: A gem that interacts with this API. You can access the <a href="https://github.com/antillas21/marvelite">end product here</a>.</p>
 
-<p>So I ended with an API like this:</p>
+<p>So, I began working on an initial draft (paper mostly) after reading Marvel&rsquo;s Developer portal instructions about API requests.</p>
+
+<p>My first steps into pulling data from Marvel&rsquo;s API was through the browser just passing query params in the url bar, and watching a JSON response appear in the window (I highly recommend the <a href="https://chrome.google.com/webstore/detail/jsonview/chklaanhfefbnpoihckbnefhakgolnmc">JSON View</a> browser extension to enhance the experience).</p>
+
+<p>My first gem release was nothing fancy or to be really proud of, merely two endpoints available (<code>/characters</code> and <code>/characters/:id</code>) and a rough sketch of how to add more endpoints in time&hellip; but hey, I released something into the public and just shortly after the API was available.</p>
+
+<p>After one week of iterating over the gem design, working merely at night for a couple of hours each time, here are the lessons I learned from this:</p>
+
+<ol>
+<li>Agree on a public API for (potential) users.</li>
+<li>Metaprogram for fun and profit.</li>
+<li>Do you want people to contribute? Add tests!</li>
+<li>Provide detailed documentation to users.</li>
+<li>Add tests. Seriously, add tests!</li>
+</ol>
+
+
+<p>Let&rsquo;s elaborate on each of these points.</p>
+
+<h3>Agree on a public API for users</h3>
+
+<p>Perhaps it&rsquo;s because my programming experience is heavily influenced by Rails, when I started drafting how I wanted to expose methods in this gem, I decided to use sort of Rails-y conventions:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">comics</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+</span><span class='line'><span class="n">characters</span><span class="p">(</span><span class="mi">234</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># and why not, the option to pass a character&#39;s name to retrieve it,</span>
+</span><span class='line'><span class="c1"># because we don&#39;t know ids (not yet at least).</span>
+</span><span class='line'><span class="n">character</span><span class="p">(</span><span class="s1">&#39;Spider-Man&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>When I realized I needed to implement a small router that should provide an API client with available routes, I thought it would be a good idea to implement them like this:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">comics_path</span>
+</span><span class='line'><span class="n">comic_path</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+</span><span class='line'><span class="n">character_comics_path</span><span class="p">(</span><span class="mi">234</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># yes, a Rails like router ;)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>These decisions influenced every line of code that came after them.</p>
+
+<h3>Metaprogram for fun and profit</h3>
+
+<p>When I was working on the gem, I had the opportunity to pair-program with <a href="https://github.com/igmarin">Ismael Marín</a>, a friend from the Bajío on Rails community. During our session, he pointed out that my (at the moment) current codebase could benefit from using metaprogramming tricks, which in the end will result in reducing the maintenance burden of adding new endpoints and functionality as the Marvel API makes them available.</p>
+
+<p>And so, I went from manually-defined methods like this:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -37,25 +96,69 @@
 <span class='line-number'>13</span>
 <span class='line-number'>14</span>
 <span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">client</span> <span class="o">=</span> <span class="ss">Marvelite</span><span class="p">:</span><span class="ss">:API</span><span class="o">::</span><span class="no">Client</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
-</span><span class='line'>  <span class="ss">:public_key</span> <span class="o">=&gt;</span> <span class="s1">&#39;abcd&#39;</span><span class="p">,</span>
-</span><span class='line'>  <span class="ss">:private_key</span> <span class="o">=&gt;</span> <span class="s1">&#39;1234&#39;</span>
-</span><span class='line'><span class="p">)</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1">## WARNING!: The following is fugly code. It has been refactored FTW :)</span>
 </span><span class='line'>
-</span><span class='line'><span class="c1"># fetch a character:</span>
-</span><span class='line'><span class="n">client</span><span class="o">.</span><span class="n">character</span><span class="p">(</span><span class="mi">900126</span><span class="p">)</span>
+</span><span class='line'><span class="c1"># code from the Marvelite::API::Router class</span>
 </span><span class='line'>
-</span><span class='line'><span class="c1"># but, who knows what id to use to fetch</span>
-</span><span class='line'><span class="c1"># a character by name, so, this is more handy:</span>
-</span><span class='line'><span class="n">client</span><span class="o">.</span><span class="n">character</span><span class="p">(</span><span class="s1">&#39;Spider-Man&#39;</span><span class="p">)</span>
+</span><span class='line'><span class="k">def</span> <span class="nf">characters_path</span>
+</span><span class='line'>  <span class="s2">&quot;/</span><span class="si">#{</span><span class="n">api_version</span><span class="si">}</span><span class="s2">/public/characters&quot;</span>
+</span><span class='line'><span class="k">end</span>
 </span><span class='line'>
-</span><span class='line'><span class="c1"># want a list of comics this character appears on?</span>
-</span><span class='line'><span class="c1"># sure, no problem:</span>
-</span><span class='line'><span class="n">client</span><span class="o">.</span><span class="n">character_comics</span><span class="p">(</span><span class="s1">&#39;Spider-Man&#39;</span><span class="p">)</span>
+</span><span class='line'><span class="k">def</span> <span class="nf">character_path</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+</span><span class='line'>  <span class="s2">&quot;/</span><span class="si">#{</span><span class="n">api_version</span><span class="si">}</span><span class="s2">/public/characters/</span><span class="si">#{</span><span class="nb">id</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">character_comics_path</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+</span><span class='line'>  <span class="s2">&quot;/</span><span class="si">#{</span><span class="n">api_version</span><span class="si">}</span><span class="s2">/public/characters/</span><span class="si">#{</span><span class="nb">id</span><span class="si">}</span><span class="s2">/comics&quot;</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># code from the Marvelite::API::Client class</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">characters</span><span class="p">(</span><span class="n">query_params</span> <span class="o">=</span> <span class="p">{})</span>
+</span><span class='line'>  <span class="n">response</span> <span class="o">=</span> <span class="nb">self</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/</span><span class="si">#{</span><span class="n">api_version</span><span class="si">}</span><span class="s2">/</span><span class="si">#{</span><span class="n">router</span><span class="o">.</span><span class="n">characters_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="ss">:query</span> <span class="o">=&gt;</span> <span class="n">params</span><span class="p">(</span><span class="n">query_params</span><span class="p">))</span>
+</span><span class='line'>  <span class="n">build_response_object</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">character_comics</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">query_params</span> <span class="o">=</span> <span class="p">{})</span>
+</span><span class='line'>  <span class="k">if</span> <span class="nb">id</span><span class="o">.</span><span class="n">is_a?</span><span class="p">(</span><span class="nb">String</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">character</span> <span class="o">=</span> <span class="n">find_character_by_name</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">return</span> <span class="kp">false</span> <span class="k">unless</span> <span class="n">character</span>
+</span><span class='line'>    <span class="nb">id</span> <span class="o">=</span> <span class="n">character</span><span class="o">.</span><span class="n">id</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">response</span> <span class="o">=</span> <span class="nb">self</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/</span><span class="si">#{</span><span class="n">api_version</span><span class="si">}</span><span class="s2">/</span><span class="si">#{</span><span class="n">router</span><span class="o">.</span><span class="n">character_comics_path</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="ss">:query</span> <span class="o">=&gt;</span> <span class="n">params</span><span class="p">(</span><span class="n">query_params</span><span class="p">))</span>
+</span><span class='line'>  <span class="n">build_response_object</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</span><span class='line'><span class="k">end</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
+<p>You can already start discussing the burden this will create for maintenance, just by manually adding new methods to tackle access to all available API endpoints.</p>
 
+<p>With just cause, you will be talking some sense to me to fix this ASAP. Just want to point out in my defense, that this was only exploratory code to have something out-the-door.</p>
+
+<p>After some thinking, tweaking and refactoring, I ended up with something like this:</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -69,20 +172,116 @@
 <span class='line-number'>10</span>
 <span class='line-number'>11</span>
 <span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='javascript'><span class='line'><span class="kd">var</span> <span class="nx">comicsApp</span> <span class="o">=</span> <span class="nx">angular</span><span class="p">.</span><span class="nx">module</span><span class="p">(</span><span class="s1">&#39;comicsApp&#39;</span><span class="p">,</span> <span class="p">[]);</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># code from the Marvelite::API::Router class</span>
 </span><span class='line'>
-</span><span class='line'><span class="c1">// then you&#39;ll configure the app...</span>
-</span><span class='line'><span class="c1">// part of this config will create a service named Comics</span>
-</span><span class='line'><span class="c1">// then we get to the controller, that will use this service:</span>
-</span><span class='line'><span class="nx">comicsApp</span><span class="p">.</span><span class="nx">controller</span><span class="p">(</span><span class="s1">&#39;ComicsListController&#39;</span><span class="p">,</span>
-</span><span class='line'>  <span class="p">[</span><span class="s1">&#39;$scope&#39;</span><span class="p">,</span> <span class="s1">&#39;Comics&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">$scope</span><span class="p">,</span> <span class="nx">Comics</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nx">Comics</span><span class="p">.</span><span class="nx">query</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>      <span class="nx">$scope</span><span class="p">.</span><span class="nx">comics</span> <span class="o">=</span> <span class="nx">data</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>  <span class="p">}]</span>
-</span><span class='line'><span class="p">);</span>
+</span><span class='line'><span class="k">def</span> <span class="nf">add_route</span><span class="p">(</span><span class="nb">name</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">routes</span><span class="o">[</span><span class="s2">&quot;</span><span class="si">#{</span><span class="nb">name</span><span class="si">}</span><span class="s2">_path&quot;</span><span class="o">.</span><span class="n">to_sym</span><span class="o">]</span> <span class="o">=</span> <span class="p">{</span> <span class="ss">:name</span> <span class="o">=&gt;</span> <span class="nb">name</span><span class="p">,</span> <span class="ss">:endpoint</span> <span class="o">=&gt;</span> <span class="n">endpoint</span> <span class="p">}</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">method_missing</span><span class="p">(</span><span class="nb">method</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">if</span> <span class="n">routes</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="nb">method</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">#{</span><span class="n">routes</span><span class="o">[</span><span class="nb">method</span><span class="o">][</span><span class="ss">:endpoint</span><span class="o">]</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>    <span class="n">params</span> <span class="o">=</span> <span class="o">*</span><span class="n">args</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">any?</span>
+</span><span class='line'>      <span class="n">params</span><span class="o">[</span><span class="mi">0</span><span class="o">].</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">p_key</span><span class="p">,</span> <span class="n">p_value</span><span class="o">|</span>
+</span><span class='line'>        <span class="n">endpoint</span><span class="o">.</span><span class="n">gsub!</span><span class="p">(</span><span class="s2">&quot;:</span><span class="si">#{</span><span class="n">p_key</span><span class="o">.</span><span class="n">to_s</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">p_value</span><span class="o">.</span><span class="n">to_s</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>    <span class="s2">&quot;/</span><span class="si">#{</span><span class="n">api_version</span><span class="si">}#{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>  <span class="k">else</span>
+</span><span class='line'>    <span class="k">super</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># code from the Marvelite::API::Client class</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">build_methods</span>
+</span><span class='line'>  <span class="vi">@router</span><span class="o">.</span><span class="n">routes</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">_</span><span class="p">,</span> <span class="nb">hash</span><span class="o">|</span>
+</span><span class='line'>    <span class="nb">name</span> <span class="o">=</span> <span class="nb">hash</span><span class="o">[</span><span class="ss">:name</span><span class="o">]</span>
+</span><span class='line'>    <span class="nb">self</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="ss">:define_method</span><span class="p">,</span> <span class="nb">name</span><span class="p">)</span> <span class="k">do</span> <span class="o">|*</span><span class="n">args</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">params</span> <span class="o">=</span> <span class="n">process_arguments</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">response</span> <span class="o">=</span> <span class="n">fetch_response</span><span class="p">(</span><span class="nb">name</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">build_response_object</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'><span class="c1"># just call build_methods on initialization, and voilá, our methods are there.</span>
 </span></code></pre></td></tr></table></div></figure>
 
+
+<p>You can see the finished files here: <a href="https://github.com/antillas21/marvelite/blob/master/lib/marvelite/api/router.rb">Marvelite::API::Router</a> and <a href="https://github.com/antillas21/marvelite/blob/master/lib/marvelite/api/client.rb">Marvelite::API::Client</a>.</p>
+
+<p>The benefit of it all? I would only need to have a file where I would map the original API endpoints to a route-like structure my gem would understand.</p>
+
+<p>There&rsquo;s still work to do, I must confess, but I think this is a good first step in the right direction. This way, I reduced the maintenance burden adding new API endpoints, just add a new line and it&rsquo;s done, how cool is that?</p>
+
+<h3>Do you want people to contribute? Add tests!</h3>
+
+<p>Since day one I started working on this, I invited my friends from the Mexicali Open Source community to join in and contribute if they thought like it.</p>
+
+<p>Question was, how to be sure things work while having contributors get up to speed understanding the pieces of the gem? Easy, add tests and be descriptive about the functionality in place.</p>
+
+<p>I think this would be better explained through an image, from one of the pull requests I received.</p>
+
+<p><img class="image" src="http://antillas21.github.io/images/marvelite-pr-contribution.jpg"></p>
+
+<p>Thinking back, someone commenting you have done adding endpoints an easy task, is the best compliment to decisions made when building the project&hellip; and definitively, that made my day.</p>
+
+<h3>Provide detailed documentation to users</h3>
+
+<p>As a developer, I spend most of the time making things that work and then refactor them&hellip; and most of the time, only me or another developer understands what I ended up with, either because you assume they&rsquo;ll consult specs or read the source.</p>
+
+<p>So, I set as a personal goal, that as I would have no control over who may end up using my gem (maybe a seasoned developer that lives and breathes RTFM or a newbie developer, who knows), to write human, non-geek, non-developer exclusively, understandable documentation on how to use the gem.</p>
+
+<p>I&rsquo;d like to say that I made it right, but I can&rsquo;t be sure. Although if I judge by the numbers in this image, I like to think, documentation has made a difference.</p>
+
+<p><img class="image" src="http://antillas21.github.io/images/marvelite-rubygems-stats.jpg"></p>
+
+<h3>Add tests. Seriously, add tests!</h3>
+
+<p>You would think that in the Ruby/Rails community, where in every conference you attend to, everyone spreads the Gospel of Testing&hellip; truth be told, not everyone practices this.</p>
+
+<p>I could count with the fingers in one hand, how many projects that I&rsquo;ve worked on, really abide by test-driven development. Yes, that few. And have been working on development projects for nearly 5 years now.</p>
+
+<p>I will not argue about this point, and I will not say whoever doesn&rsquo;t practice TDD is wrong and even less I will not say I am strict practitioner of it, because truth be told, I am not.</p>
+
+<p>But hey, not being a strict practitioner does not mean I don&rsquo;t want to become one. So, I set as a skill-building exercise to add tests to prove me (and potential contributors) that things worked as expected.</p>
+
+<h4>Was it hard? was it fun? did it help?</h4>
+
+<p>Yes, yes and yes.</p>
+
+<p>Remember when I was discussing refactoring to make use of metaprogramming? Well, that wouldn&rsquo;t be possible nor an enjoyable task if it wasn&rsquo;t because of the tests in place to let me know when things broke in the course of refactoring.</p>
+
+<p>Also, remember the pull request from above? It would have not been possible without, yes you guessed, the tests in place that explained another person what endpoint was being tested and how to replicate it to test another endpoint.</p>
+
+<p>Overall, I must confess this has been an interesting journey and experience. I believe I have learned more in the course of a week working on a pet-project, than in months of contract work.</p>
+
+<p>I&rsquo;m really looking forward for Marvel to add new endpoints or release a newer version of its API, to get back to the drawing board and address whatever issues may arise from the change.</p>
+
+<p>The main topic after all this, I liked how pair-programming went out. And honestly, would like to experience more of it. So, if you have a pet project yourself and think maybe pairing could help you, let me know. I for sure, know it will be great for me.</p>
 ]]></content>
   </entry>
   
