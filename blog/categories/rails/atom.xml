@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Rails | myBuildingBlocks]]></title>
+  <link href="http://antillas21.github.io/blog/categories/rails/atom.xml" rel="self"/>
+  <link href="http://antillas21.github.io/"/>
+  <updated>2014-06-25T22:55:02-07:00</updated>
+  <id>http://antillas21.github.io/</id>
+  <author>
+    <name><![CDATA[Jose Antonio Antillon]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Hacking a CRUDy Controller]]></title>
+    <link href="http://antillas21.github.io/blog/2014/06/25/hacking-a-crudy-controller/"/>
+    <updated>2014-06-25T22:41:49-07:00</updated>
+    <id>http://antillas21.github.io/blog/2014/06/25/hacking-a-crudy-controller</id>
+    <content type="html"><![CDATA[<blockquote><p>An experiment on finding a way to create a base controller to inherit from when dealing mostly with CRUD operations.</p></blockquote>
+
+<p>Have you noticed that if you are working on an app, and need to create an admin interface for it, most of the work to be performed is your typical create, update, destroy and list actions?</p>
+
+<p>In my &ldquo;day-to-day work&rdquo; in Rails-based applications, this is typically the case. I bet the same case presents to you as well, and though I am aware of sound solutions like the <a href="https://github.com/gregbell/active_admin">ActiveAdmin</a> and <a href="https://github.com/sferik/rails_admin">RailsAdmin</a> gems, in some edge cases the queries returned by their default implementations always leave something to be desired.</p>
+
+<p>Now, let&rsquo;s not confuse this with an attachment to the NIH (Not Invented Here) syndrome, but sometimes, having an in-house and flexible implementation is more than sufficient to achieve &ldquo;Just the Right Feature<sup>TM</sup>&rdquo;.</p>
+
+<p>Getting back to day-to-day cases in controllers, specially in a Rails application, you can easily find a pattern:</p>
+
+<ul>
+<li>you need to retrieve a record to display it</li>
+<li>you need to retrieve a record to edit/update it</li>
+<li>you need to delete a record</li>
+<li>you need to create a new record</li>
+<li>you need to list all existing records</li>
+</ul>
+
+
+<p>Though one of Rails tenets is DRY (Don&rsquo;t Repeat Yourself), you find yourself adding similar actions across multiple controller files, only changing model and routes specific details.</p>
+
+<h3>Let&rsquo;s see an example</h3>
+
+<p>Suppose you&rsquo;re working in a Rails app that deals with a Books and Movies catalog (among other things). You will obviously need an interface to perform CRUD operations on these resources, so you start working your way through the first controller.</p>
+
+<p>```ruby</p>
+
+<h1>app/controllers/admin/books_controller.rb</h1>
+
+<p>class Admin::BooksController &lt; ApplicationController
+  def index</p>
+
+<pre><code># code to list all books
+# could include logic for ordering, pagination, etc.
+</code></pre>
+
+<p>  end</p>
+
+<p>  def show</p>
+
+<pre><code># code to retrieve a single book
+</code></pre>
+
+<p>  end</p>
+
+<p>  def new</p>
+
+<pre><code># code to instantiate a new book
+</code></pre>
+
+<p>  end</p>
+
+<p>  def create</p>
+
+<pre><code># code to instantiate and persist a new book
+</code></pre>
+
+<p>  end</p>
+
+<p>  def edit</p>
+
+<pre><code># code to retrieve a single book
+</code></pre>
+
+<p>  end</p>
+
+<p>  def update</p>
+
+<pre><code># code to retrieve a single book
+# and persist updated info
+</code></pre>
+
+<p>  end</p>
+
+<p>  def destroy</p>
+
+<pre><code># code to delete a single book
+</code></pre>
+
+<p>  end</p>
+
+<p>  private</p>
+
+<p>  def books_params</p>
+
+<pre><code># rules for accepted params to pass to a book instance
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Then, comes the time to work on the next controller and you come up with this:</p>
+
+<p>```ruby</p>
+
+<h1>app/controllers/admin/movies_controller.rb</h1>
+
+<p>class Admin::MoviesController &lt; ApplicationController
+  def index</p>
+
+<pre><code># code to list all movies
+# could include logic for ordering, pagination, etc.
+</code></pre>
+
+<p>  end</p>
+
+<p>  def show</p>
+
+<pre><code># code to retrieve a single movie
+</code></pre>
+
+<p>  end</p>
+
+<p>  def new</p>
+
+<pre><code># code to instantiate a new movie
+</code></pre>
+
+<p>  end</p>
+
+<p>  def create</p>
+
+<pre><code># code to instantiate and persist a new movie
+</code></pre>
+
+<p>  end</p>
+
+<p>  def edit</p>
+
+<pre><code># code to retrieve a single movie
+</code></pre>
+
+<p>  end</p>
+
+<p>  def update</p>
+
+<pre><code># code to retrieve a single movie
+# and persist updated info
+</code></pre>
+
+<p>  end</p>
+
+<p>  def destroy</p>
+
+<pre><code># code to delete a single movie
+</code></pre>
+
+<p>  end</p>
+
+<p>  private</p>
+
+<p>  def movies_params</p>
+
+<pre><code># rules for accepted params to pass to a movie instance
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Then comes the time to work on another controller, and another, and another, and yet another controller&hellip; and if you pause for a moment and look at the big picture&hellip; you basically have only one controller repeated N times your models count.</p>
+
+<p>How could we refactor these controllers into a flexible base use case? <br />Well, I recently had some time to read <a href="https://leanpub.com/growing-rails">Growing Rails Applications in Practice</a> and pretty much liked the suggestion on the <strong>&ldquo;Beautiful controllers&rdquo;</strong> chapter and decided to take it as a base to build upon&hellip; after practicing in an app I was developing at that moment, I came up with:</p>
+
+<h3>A small step in refactoring</h3>
+
+<p>Going back to our example&hellip; Let&rsquo;s declare a base controller and a mixable methods module:</p>
+
+<p>```ruby</p>
+
+<h1>app/controllers/admin/crud_methods.rb</h1>
+
+<p>module Admin
+  module CRUDMethods</p>
+
+<pre><code>def list_resources
+  @resources = model.load
+end
+
+def build_resource(attrs = {})
+  @resource = model.new(attrs)
+end
+
+def load_resource(id)
+  @resource = model.find(id)
+end
+
+def save_resource
+  if @resource.save
+    success_action('Successfully created resource.')
+  else
+    error_action(@resource, :new)
+  end
+end
+
+def update_resource(attrs)
+  if @resource.update_attributes(attrs)
+    success_action('Successfully updated resource.')
+  else
+    error_action(@resource, :edit)
+  end
+end
+
+def delete_resource(id)
+  load_resource(id)
+  @resource.destroy
+  destroy_success_action
+end
+</code></pre>
+
+<p>  end
+end</p>
+
+<h1>app/controllers/admin/base.rb</h1>
+
+<p>class Admin::BaseController
+  include Admin::CRUDMethods</p>
+
+<p>  class NotImplementedError &lt; StandardError; end</p>
+
+<p>  def index</p>
+
+<pre><code>list_resources
+</code></pre>
+
+<p>  end</p>
+
+<p>  def new</p>
+
+<pre><code>build_resource
+</code></pre>
+
+<p>  end</p>
+
+<p>  def create</p>
+
+<pre><code>build_resource(accepted_params)
+save_resource
+</code></pre>
+
+<p>  end</p>
+
+<p>  def show</p>
+
+<pre><code>load_resource(id_key)
+</code></pre>
+
+<p>  end</p>
+
+<p>  def edit</p>
+
+<pre><code>load_resource(id_key)
+</code></pre>
+
+<p>  end</p>
+
+<p>  def update</p>
+
+<pre><code>load_resource(id_key)
+update_resource(accepted_params)
+</code></pre>
+
+<p>  end</p>
+
+<p>  def destroy</p>
+
+<pre><code>delete_resource(id_key)
+</code></pre>
+
+<p>  end</p>
+
+<p>  private</p>
+
+<p>  def model</p>
+
+<pre><code>fail(
+  NotImplementedError,
+  'Configure main ActiveRecord class to manage in this controller.'
+)
+</code></pre>
+
+<p>  end</p>
+
+<p>  def id_key</p>
+
+<pre><code>fail(
+  NotImplementedError,
+  'Configure params[:key] needed to retrieve a record for this controller.'
+)
+</code></pre>
+
+<p>  end</p>
+
+<p>  def accepted_params</p>
+
+<pre><code>fail(
+  NotImplementedError,
+  'Configure the required key and accepted params for a record in this controller'
+)
+</code></pre>
+
+<p>  end</p>
+
+<p>  def success_action</p>
+
+<pre><code>fail(
+  NotImplementedError,
+  'Configure what to do when saving/updating a record succeeds.'
+)
+</code></pre>
+
+<p>  end</p>
+
+<p>  def error_action(resource, view)</p>
+
+<pre><code>@resource = resource
+flash[:error] = 'Something went wrong.'
+render view
+</code></pre>
+
+<p>  end</p>
+
+<p>  def destroy_success_action</p>
+
+<pre><code>fail(
+  NotImplementedError,
+  'Configure what to do when deleting a record succeeds.'
+)
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>I know, I know&hellip; this looks like an awful lot of boilerplate&hellip; but bear with me for a second while I show you how the Books and Movies controllers will look like now that we have this base class in place.</p>
+
+<p>```ruby</p>
+
+<h1>app/controller/admin/books_controller.rb</h1>
+
+<p>class Admin::BooksController &lt; Admin::BaseController
+  private</p>
+
+<p>  def model</p>
+
+<pre><code>Book
+</code></pre>
+
+<p>  end</p>
+
+<p>  def id_key</p>
+
+<pre><code>params[:id]
+</code></pre>
+
+<p>  end</p>
+
+<p>  def accepted_params</p>
+
+<pre><code>params.require(:book).permit(
+  :title, :author, :isbn, :page_count, :price, :category, :etc
+)
+</code></pre>
+
+<p>  end</p>
+
+<p>  def success_action(message)</p>
+
+<pre><code>redirect_to admin_book_path(@resource), notice: message
+</code></pre>
+
+<p>  end</p>
+
+<p>  def destroy_success_action(message)</p>
+
+<pre><code>redirect_to admin_books_path, notice: message
+</code></pre>
+
+<p>  end
+end</p>
+
+<h1>app/controllers/admin/movies_controller.rb</h1>
+
+<p>class Admin::MoviesController &lt; Admin::BaseController
+  private</p>
+
+<p>  def model</p>
+
+<pre><code>Movie
+</code></pre>
+
+<p>  end</p>
+
+<p>  def id_key</p>
+
+<pre><code>params[:id]
+</code></pre>
+
+<p>  end</p>
+
+<p>  def accepted_params</p>
+
+<pre><code>params.require(:movie).permit(
+  :title, :director, :upc_code, :duration, :price, :category, :etc
+)
+</code></pre>
+
+<p>  end</p>
+
+<p>  def success_action(message)</p>
+
+<pre><code>redirect_to admin_movie_path(@resource), notice: message
+</code></pre>
+
+<p>  end</p>
+
+<p>  def destroy_success_action(message)</p>
+
+<pre><code>redirect_to admin_movies_path, notice: message
+</code></pre>
+
+<p>  end
+end
+```
+If you take a look at the resulting controllers, you&rsquo;ll notice we have separated the things that change (params, model, routes, etc. on each derivative controller), from those that don&rsquo;t (the base CRUD methods). <em>I bet there&rsquo;s even a pattern name for this ; )</em></p>
+
+<p>Now, suppose you need to work on building CRUD actions for a MusicAlbum controller&hellip; guess what that would look like? And the next controller you need to implement the same actions all over again?</p>
+
+<p>Exactly&hellip; now that we have ourselves a base platform, we can re-use and override at will; do you need a more complicated logic in any of the actions? do you need to ensure your queries are database optimized when retrieving a collection or a single record and its associations? <br />Not a problem, simply override the method you need, be it the main CRUD-based action in the controller (<code>index, show, update, etc.</code>), or the abstract methods provided by the base controller or the mixable module (<code>load_resource, update_resource, etc.</code>) and voilá! you can have just the flexibility you need while keeping your eyes in the big picture.</p>
+
+<p>While this is not a silver bullet design, I pretty much like what it provides so far. Let&rsquo;s not forget that we don&rsquo;t need all our controllers to inherit from this base controller; we need to evaluate the corresponding use case, but if CRUD operations is what you need repeated ad-infinitum in a uniform approach, why not take this approach for a spin?</p>
+
+<p>Do you like what we&rsquo;ve done here? Do you have a different opinion or approach? I&rsquo;d love to know your comments on this topic. You can <a href="http://twitter.com/antillas21">tweet</a> or <a href="mailto:antillas21@gmail.com">email</a> me and start a conversation.</p>
+]]></content>
+  </entry>
+  
+</feed>
